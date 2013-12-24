@@ -4,3 +4,10 @@
 1.0.1
 - Added out(), to format console output.
 - Converted (all?) echo commands to use out().
+
+1.0.2
+- Changed format_ticker() to use out(). 
+- Added additional function documentation. 
+- Fixed pending order bugs, and console display problems.
+- Fixed cancel order bugs, and display problems.
+- Update status messages, fixed formatting and made them more clear.

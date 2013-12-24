@@ -1,7 +1,7 @@
 <?php
 	/**
 	 * Reinvestor	:	reinvest.php
-	 * Version		:	1.0.1
+	 * Version		:	1.0.2
 	 * Author		:	Zack Urben
 	 * Contact		:	zackurben@gmail.com
 	 * Creation		:	12/23/13 (public)
@@ -137,12 +137,16 @@
 		$json = json_decode($json, true);
 		
 		// Display Time and formatted JSON Data
-		out("\nLast       High       Low        Bid        Ask        Volume\n", "\n");
-		echo format_number($json["last"]), " ", format_number($json["high"]), " ",	format_number($json["low"]), " ";
-		echo format_number($json["bid"]), " ", format_number($json["ask"]), " ", format_number($json["volume"]), "\n";
+		out("\nLast       High       Low        Bid        Ask        Volume\n" .
+			format_number($json["last"]) . " " . format_number($json["high"]) . " " . format_number($json["low"]) . " " .
+			format_number($json["bid"]) . " " . format_number($json["ask"]) . " " . format_number($json["volume"]) . "\n", "\n");
 	}
 	
 	/**
+	 * Analyze trade for the given coin. This will cancel incomplete buy transactions
+	 * after ~1 minute, and resubmit at the current price; to ensure all funds are utilized.
+	 * This will additionaly use the given coin to purchase the maximum amount of coins with
+	 * the given coin reserve amount.
 	 *
 	 * Input	: coin = string {btc | nmc}
 	 */
@@ -151,6 +155,7 @@
 		if(isset($data["pending"][$coin]) && (count($data["pending"][$coin]) > 0)) {
 			$pending = true;
 		} else {
+			//out("DEBUG Pending: " . print_r($data["pending"], true));
 			$pending = false;	
 		}
 		
@@ -176,7 +181,9 @@
 						}
 					}
 				} else {
-					// item is no longer in the order (transaction was successful)
+					// item is no longer in the order (transaction was successful)				
+					out("Reinvestor: Purchase order complete (ID: " . $trade["id"] . ", " . $trade["amount"] . 
+						" GHS @ " . $trade["price"] . " " . $data["coins"][$coin]["ticker"] . ")\n");
 					unset($data["pending"][$coin][strval($trade["id"])]);
 				}
 			}
@@ -198,21 +205,38 @@
 				$amt -= 0.00000001; // round, exceeded funds
 			}
 			
-			$temp = execute($user, $data, "place_order", array("buy", $amt, $price["last"], $data["coins"][$coin]["ticker"]));
-			file_put_contents("buy_order.txt", ("[" . date("Y-m-d h:i:s A", time()) . "] Reinvestor Purchase:\n" . print_r($temp, true) . "\n"), FILE_APPEND | LOCK_EX);
-			
-			if($temp["pending"] == 0) {
-				// purchase done
-				out("Reinvestor: Purchased " . $temp["amount"] . " GHS @ " . $temp["price"] . " (Pending: " . $temp["pending"] . " GHS)\n");
+			if($amt > 0.00000001) {
+				$temp = execute($user, $data, "place_order", array("buy", $amt, $price["last"], $data["coins"][$coin]["ticker"]));
+				
+				if(!isset($temp["error"])) {
+					file_put_contents("buy_order.txt", ("[" . date("Y-m-d h:i:s A", time()) . 
+						"] Reinvestor Purchase:\n" . print_r($temp, true) . "\n"), FILE_APPEND | LOCK_EX);
+					
+					if((isset($temp["id"]) && ($temp["pending"] == 0)) && isset($temp["id"])) {
+						// actual purchase done
+						out("Reinvestor: Purchased " . $temp["amount"] . " GHS @ " . $temp["price"] . " " .
+							$data["coins"][$coin]["ticker"] ." (Pending: " . $temp["pending"] . " GHS)\n");
+					} else {
+						// purchase pending, or obscure error
+						out("Reinvestor: Purchase order for " . $temp["amount"] . " GHS @ " . $temp["price"] . " " .
+							$data["coins"][$coin]["ticker"] ." (Pending: " . $temp["pending"] . " GHS, ID: " . $temp["id"] . ")\n");
+						$data["pending"][$coin][strval($temp["id"])] = $temp;
+					}
+				} else {
+					out("Reinvestor: Purchase error for "  . $amt . " GHS @ " . $price["last"] . " " . 
+						$data["coins"][$coin]["ticker"] . "\n");
+				}
 			} else {
-				// purchase pending
-				$data["pending"][$coin][strval($temp["id"])] = $temp;
+				// coin balance cannot purchase minimum GHS
+				// remove because of spam?
+				out("Reinvestor: " . strtoupper($coin) . " balance is too low to place the minimum order.\n");
 			}
 		} else {
 			// Generic waiting time to lower CPU time
 			sleep(60);
 			// TODO: edit output
-			out("Waiting, insufficient funds to initiate new positions.\n"); // DEBUG
+			out("Waiting, " . strtoupper($coin) . " balance (" . $balance[strtoupper($coin)]["available"] . 
+				" is lower than the specified reserve amount (" . $data["coins"][$coin]["reserve"] . ")\n"); // DEBUG
 		}
 	}
 	
@@ -221,7 +245,7 @@
 	 */
 	function reinvest(&$user, &$data) {
 		$done = false;
-		
+
 		while(!$done) {
 			// get account info, determine if can trade
 			$balance = execute($user, $data, "balance");
@@ -246,7 +270,6 @@
 			}
 			
 			// wait to iterate again
-			out("Reinvestor: Round complete!\n");
 			sleep(60); // hardcoded
 		}
 	}
@@ -327,7 +350,7 @@
 		
 		while(!$done) {
 			
-			out("[B]alance | [1] Display 'GHS/BTC' | [2] Display 'GHS/NMC' | [E]xit\n" .
+			out("\n[B]alance | [1] Display 'GHS/BTC' | [2] Display 'GHS/NMC' | [E]xit\n" .
 				"[R]einvest\n" .
 				"Reinvestor> ", "\n");
 			$stdin = fopen("php://stdin", "r");
@@ -335,15 +358,12 @@
 			if ($input == "B" || $input == "b") {
 				// Display formatted user balance
 				format_balance(json_encode(execute($user, $data, "balance")));
-				echo "\n";
 			} elseif ($input == "1") {
 				// Display formatted GHS/BTC data
 				format_ticker(json_encode(execute($user, $data, "ticker", "GHS/BTC")));
-				echo "\n";
 			} elseif ($input == "2") {
 				// Display formatted GHS/NMC data
 				format_ticker(json_encode(execute($user, $data, "ticker", "GHS/NMC")));
-				echo "\n";
 			} elseif($input == "E" || $input == "e") {
 				// request to quit was made
 				$done = true;
