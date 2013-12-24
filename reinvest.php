@@ -1,7 +1,7 @@
 <?php
 	/**
 	 * Reinvestor	:	reinvest.php
-	 * Version		:	1.0.0
+	 * Version		:	1.0.1
 	 * Author		:	Zack Urben
 	 * Contact		:	zackurben@gmail.com
 	 * Creation		:	12/23/13 (public)
@@ -33,7 +33,7 @@
 	 * large contributor to the API project (PHP), please use my branch of the API
 	 * for script stability, as this is what I am using to make this.
 	 */
-	include_once("../../../Documents/Code/GitHub/cex.io-api-php/cexapi.class.php");
+	include_once("cexapi.class.php");
 	
 	/**
 	 * Data array to store all trade data. We will pass our data
@@ -53,6 +53,16 @@
 				"nmc" => array("active"=>true, "reserve"=>0, "ticker"=>"GHS/NMC")); // coins to use 
 		$data["position"] = array(); // current sales data
 		$data["pending"] = array(); // pending orders (to complete)
+	
+	/**
+	 * Format input to display in the console.
+	 *
+	 * Input	: String to display in console, with timestamp.
+	 * Output	: None
+	 */
+	function out($input, $prepend = NULL){
+		echo $prepend, "[", date("Y-m-d h:i:s A", time()), "] ", $input;
+	}
 		
 	/**
 	 * Cleanly format the blance output for terminal
@@ -64,7 +74,7 @@
 		$json = json_decode($json, true);
 			
 		if(isset($json["timestamp"])) {
-			echo "\n", date("Y-m-d h:i:s A", $json["timestamp"]), "\nCur Available  Order\n";
+			out("\nCur Available  Order\n", "\n");
 		}
 		if(isset($json["BTC"])) {
 			echo "BTC ", format_number($json["BTC"]["available"]), " ", format_number($json["BTC"]["orders"]), "\n";	
@@ -127,7 +137,7 @@
 		$json = json_decode($json, true);
 		
 		// Display Time and formatted JSON Data
-		echo "\n", date("Y-m-d h:i:s A", $json['timestamp']), "\nLast       High       Low        Bid        Ask        Volume\n";
+		out("\nLast       High       Low        Bid        Ask        Volume\n", "\n");
 		echo format_number($json["last"]), " ", format_number($json["high"]), " ",	format_number($json["low"]), " ";
 		echo format_number($json["bid"]), " ", format_number($json["ask"]), " ", format_number($json["volume"]), "\n";
 	}
@@ -158,10 +168,11 @@
 						
 						// remove order by id
 						if($temp_co) {
-							echo "[", date("Y-m-d h:i:s A", time()), "] ", "Reinvestor: Canceled pending order (", $data["pending"][$coin][$trade["id"]], ").\n";
+							out("Reinvestor: Canceled pending order (" . $data["pending"][$coin][$trade["id"]] . ").\n");
 							unset($data["pending"][$coin][$trade["id"]]);
 						} else {
-							echo "[", date("Y-m-d h:i:s A", time()), "] ", "ERROR: could not cancel pending order\n", print_r($temp_co, true), "\n";
+							// TODO: log error to file
+							out("ERROR: could not cancel pending order\n" . print_r($temp_co, true) . "\n");
 						}
 					}
 				} else {
@@ -173,8 +184,7 @@
 		
 		// recalc balance
 		$balance = execute($user, $data, "balance");
-		echo "[", date("Y-m-d h:i:s A", time()), "] ", "Reinvestor: Current ", strtoupper($coin),
-				" balance: ", $balance[strtoupper($coin)]["available"], "\n";
+		out("Reinvestor: Current " . strtoupper($coin) . " balance: " . $balance[strtoupper($coin)]["available"] . "\n");
 		
 		// do purchases here
 		if($balance[strtoupper($coin)]["available"] > $data["coins"][$coin]["reserve"]) {
@@ -193,19 +203,16 @@
 			
 			if($temp["pending"] == 0) {
 				// purchase done
-				echo "[", date("Y-m-d h:i:s A", time()), "] ", "Reinvestor: Purchased ", $temp["amount"], " GHS @ ", $temp["price"], " (Pending: ", $temp["pending"], " GHS)\n";
+				out("Reinvestor: Purchased " . $temp["amount"] . " GHS @ " . $temp["price"] . " (Pending: " . $temp["pending"] . " GHS)\n");
 			} else {
 				// purchase pending
 				$data["pending"][$coin][strval($temp["id"])] = $temp;
 			}
-			
-			// Estimation for average time allowed per call, per lockout period.
-			// sleep(intval((($data["max_api_calls"]/3)/60)*2));
-			//sleep(60); // hardcoded
 		} else {
 			// Generic waiting time to lower CPU time
 			sleep(60);
-			echo "[", date("Y-m-d h:i:s A", time()), "] ", "Waiting, insufficient funds to initiate new positions.\n"; // DEBUG
+			// TODO: edit output
+			out("Waiting, insufficient funds to initiate new positions.\n"); // DEBUG
 		}
 	}
 	
@@ -234,18 +241,19 @@
 				}
 			} else {
 				// wait till next call, no trades available
-				echo "[", date("Y-m-d h:i:s A", time()), "] ", "Reinvestor: Waiting, insufficient funds to initiate new positions.\n";
+				out("Reinvestor: Waiting, insufficient funds to initiate new positions.\n");
 				sleep(60);	
 			}
 			
 			// wait to iterate again
-			echo "[", date("Y-m-d h:i:s A", time()), "] ", "Reinvestor: Round complete!\n";
+			out("Reinvestor: Round complete!\n");
 			sleep(60); // hardcoded
 		}
 	}
 	
 	/**
 	 * Wrapper class for API calls, to ensure the maximum limit is not exceeded.
+	 *
 	 * Input	: Function which calls Cex.io API
 	 * Output	: Any function output
 	 */
@@ -266,7 +274,7 @@
 				} elseif($function == "ticker") {
 					$out = $user->ticker($param); // get ticker of param
 				} elseif($function == "order_book") {
-					// not used for reinvest
+					// not used for reinvest (yet)
 					$out = $user->order_book($param); // get order book of pair
 				} elseif($function == "place_order") {
 					$out = $user->place_order($param[0], $param[1], $param[2], $param[3]); // place order for param[3]
@@ -287,7 +295,7 @@
 					$data["last_time"] = time();
 				} else {
 					// api calls was too high, sleep
-					echo "API Limit reached, waiting 60 seconds to try again.\n";
+					out("API Limit reached, waiting 60 seconds to try again.\n");
 					sleep(60);
 				}
 			}
@@ -318,9 +326,10 @@
 		$done = false;
 		
 		while(!$done) {
-			echo "[B]alance | [1] Display 'GHS/BTC' | [2] Display 'GHS/NMC' | [E]xit\n";
-			echo "[R]einvest\n";
-			echo "Reinvestor> ";
+			
+			out("[B]alance | [1] Display 'GHS/BTC' | [2] Display 'GHS/NMC' | [E]xit\n" .
+				"[R]einvest\n" .
+				"Reinvestor> ", "\n");
 			$stdin = fopen("php://stdin", "r");
 			$input = fgetc($stdin);
 			if ($input == "B" || $input == "b") {
@@ -348,9 +357,9 @@
 		}
 		
 		// tightguy spam
-		echo "Thanks for using my Cex.io Reinvestment tool.\n";
-		echo "Motivation BTC: 1HvXfXRP9gZqHPkQUCPKmt5wKyXDMADhvQ\n";
-		echo "Reinvestment ran for ", round(((time() - $data["start_time"])/60), 2), " minutes!\n";
+		out("\nThanks for using my Cex.io Reinvestment tool.\n" .
+			"Motivation BTC: 1HvXfXRP9gZqHPkQUCPKmt5wKyXDMADhvQ\n" .
+			"Reinvestment ran for " . round(((time() - $data["start_time"])/60), 2) . " minutes!\n");
 		exit;
 	}
 	
@@ -367,14 +376,14 @@
 		if(isset($api)) {
 			loop($api, $data);
 		} else {
-			echo "Trading requires a Username, API Key, and API Secret.\n";
-			echo "Please visit: Cex.io/api, if you do not have an API Key and Secret.\n";
-			echo "Proper use is: \"php trade.php Username API_Key API_Secret\"\n";
-			echo "Authentication error: ", print_r($api, true), "\n"; // DEBUG
+			out("\nTrading requires a Username, API Key, and API Secret.\n" .
+				"Please visit: Cex.io/api, if you do not have an API Key and Secret.\n" .
+				"Proper use is: \"php trade.php Username API_Key API_Secret\"\n" .
+				"Authentication error: " . print_r($api, true) . "\n"); // DEBUG
 		}
 	} else {
-		echo "Trading requires a Username, API Key, and API Secret.\n";
-		echo "Please visit: Cex.io/api, if you do not have an API Key and Secret.\n";
-		echo "Proper use is: \"php trade.php Username API_Key API_Secret\"\n";
+		out("\nTrading requires a Username, API Key, and API Secret.\n" .
+			"Please visit: Cex.io/api, if you do not have an API Key and Secret.\n" .
+			"Proper use is: \"php trade.php Username API_Key API_Secret\"\n");
 	}
 ?>

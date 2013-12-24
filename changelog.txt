@@ -1,0 +1,6 @@
+1.0.0
+- Initial public release.
+
+1.0.1
+- Added out(), to format console output.
+- Converted (all?) echo commands to use out().
