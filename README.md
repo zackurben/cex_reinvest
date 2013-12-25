@@ -18,7 +18,7 @@ The Reinvestor is a platform agnostic script.
 ..* Place Order 
 ..* Cancel Order 
 2. Download the latest version of the [Cex.io API](https://github.com/zackurben/cex.io-api-php).
-3. Download the latest version of the [Cex.io PHP Reinvestor](https://github.com/zackurben/cex_reinvest).
+3. Download the latest version of the [Cex.io PHP Reinvestor](https://github.com/zackurben/cex_reinvest/archive/master.zip).
 4. Place both items in the same directory.
 
 ### *nix Box Specific
