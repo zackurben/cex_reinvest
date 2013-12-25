@@ -22,3 +22,7 @@
 1.0.5
 - Fixed purchase amount conversion problem, php was converting to scientific notation.
 - Expanded some comments
+
+1.0.6
+- Added README.md
+- Updated some output

@@ -4,13 +4,19 @@
 	 * you can read more in LICENSE.txt.
 	 *
 	 * Reinvestor	:	reinvest.php
-	 * Version		:	1.0.5
+	 * Version		:	1.0.6
 	 * Author		:	Zack Urben
 	 * Contact		:	zackurben@gmail.com
 	 * Creation		:	12/23/13 (public)
 	 *
+	 * This script requires a free API Key from Cex.io, which can be obtained
+	 * here: https://cex.io/trade/profile
+	 * This API Key requires the following permissions:
+	 * Account Balance, Place Order, Cancel Order, Open Order
+	 *
 	 * Motivation BTC	@ 1HvXfXRP9gZqHPkQUCPKmt5wKyXDMADhvQ
-	 * Cex.io referral	@ https://cex.io/r/0/kannibal3/0/
+	 * Cex.io Referral	@ https://cex.io/r/0/kannibal3/0/
+	 * Cryptsy Trade Key@ e5447842f0b6605ad45ced133b4cdd5135a4838c
 	 * Other donations accepted via email request.
 	 *
 	 * TODO:
@@ -408,12 +414,12 @@
 		} else {
 			out("\nTrading requires a Username, API Key, and API Secret.\n" .
 				"Please visit: Cex.io/api, if you do not have an API Key and Secret.\n" .
-				"Proper use is: \"php trade.php Username API_Key API_Secret\"\n" .
+				"Proper use is: \"php reinvest.php Username API_Key API_Secret\"\n" .
 				"Authentication error: " . print_r($api, true) . "\n"); // DEBUG
 		}
 	} else {
 		out("\nTrading requires a Username, API Key, and API Secret.\n" .
 			"Please visit: Cex.io/api, if you do not have an API Key and Secret.\n" .
-			"Proper use is: \"php trade.php Username API_Key API_Secret\"\n");
+			"Proper use is: \"php reinvest.php Username API_Key API_Secret\"\n");
 	}
 ?>
