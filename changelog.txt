@@ -18,3 +18,7 @@
 
 1.0.4
 - Added MIT Open Source License
+
+1.0.5
+- Fixed purchase amount conversion problem, php was converting to scientific notation.
+- Expanded some comments

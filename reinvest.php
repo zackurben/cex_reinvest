@@ -4,7 +4,7 @@
 	 * you can read more in LICENSE.txt.
 	 *
 	 * Reinvestor	:	reinvest.php
-	 * Version		:	1.0.4
+	 * Version		:	1.0.5
 	 * Author		:	Zack Urben
 	 * Contact		:	zackurben@gmail.com
 	 * Creation		:	12/23/13 (public)
@@ -15,6 +15,7 @@
 	 *
 	 * TODO:
 	 * - Add start file config
+	 * - Add buy/sell limits for each coin.
 	 */
 	
 	/**
@@ -158,11 +159,10 @@
 		if(isset($data["pending"][$coin]) && (count($data["pending"][$coin]) > 0)) {
 			$pending = true;
 		} else {
-			//out("DEBUG Pending: " . print_r($data["pending"], true));
 			$pending = false;	
 		}
 		
-		// if pending, determine if order is too old
+		// if pending, determine if each order is too old and cancel
 		if($pending) {
 			$cur = time();
 
@@ -201,19 +201,21 @@
 			$price = execute($user, $data, "ticker", $data["coins"][$coin]["ticker"]); // get pair info
 	
 			// calculate purchase amount
-			$amt = (($balance[strtoupper($coin)]["available"]-$data["coins"][$coin]["reserve"])/$price["last"]);
-			$amt = round($amt, 8);
+			$amt = ((($balance[strtoupper($coin)]["available"]-$data["coins"][$coin]["reserve"])/$price["last"]));
+			$amt = (round($amt, 8));
 			
-			if($amt > $balance[strtoupper($coin)]["available"]) {
-				$amt -= 0.00000001; // round, exceeded funds
+			if($amt < $balance[strtoupper($coin)]["available"]) {
+				$amt -= 0.00000001; // rounding made amt exceed available funds
 			}
 			
 			if($amt > 0.00000001) {
+				$amt = number_format((float) $amt, 8, ".", ""); // correct floatval() converting to scientific notation
 				$temp = execute($user, $data, "place_order", array("buy", $amt, $price["last"], $data["coins"][$coin]["ticker"]));
 				
+				
 				if(!isset($temp["error"])) {
-					file_put_contents("buy_order.txt", ("[" . date("Y-m-d h:i:s A", time()) . 
-						"] Reinvestor Purchase:\n" . print_r($temp, true) . "\n"), FILE_APPEND | LOCK_EX);
+					file_put_contents("buy_order.txt", ("[" . date("Y-m-d h:i:s A", time()) . "] Reinvestor Purchase (" . 
+						strtoupper($coin) . "):\n" . print_r($temp, true) . "\n"), FILE_APPEND | LOCK_EX);
 					
 					if((isset($temp["id"]) && ($temp["pending"] == 0)) && isset($temp["id"])) {
 						// actual purchase done
@@ -238,13 +240,16 @@
 			// Generic waiting time to lower CPU time
 			sleep(60);
 			// TODO: edit output
-			out("Waiting, " . strtoupper($coin) . " balance (" . $balance[strtoupper($coin)]["available"] . 
-				" is lower than the specified reserve amount (" . $data["coins"][$coin]["reserve"] . ")\n"); // DEBUG
+			//out("Waiting, " . strtoupper($coin) . " balance (" . $balance[strtoupper($coin)]["available"] . 
+			//	") is lower than the specified reserve amount (" . $data["coins"][$coin]["reserve"] . ")\n"); // DEBUG
 		}
 	}
 	
 	/**
-	 *
+	 * Considers the feasibility of reinvestment.
+	 * 
+	 * Input	: User API object, program data.
+	 * Output	: None
 	 */
 	function reinvest(&$user, &$data) {
 		$done = false;
