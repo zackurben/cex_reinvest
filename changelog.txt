@@ -15,3 +15,6 @@
 1.0.3
 - Fixed pending sales bug, would only check pending balance if your balance was greater than the reserve.
 - Fixed error in calculating purchase amount with a reserve limit.
+
+1.0.4
+- Added MIT Open Source License

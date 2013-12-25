@@ -1,7 +1,10 @@
 <?php
 	/**
+	 * This project is licensed under the terms of the MIT license,
+	 * you can read more in LICENSE.txt.
+	 *
 	 * Reinvestor	:	reinvest.php
-	 * Version		:	1.0.3
+	 * Version		:	1.0.4
 	 * Author		:	Zack Urben
 	 * Contact		:	zackurben@gmail.com
 	 * Creation		:	12/23/13 (public)
