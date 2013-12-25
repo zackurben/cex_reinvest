@@ -24,6 +24,7 @@ The Reinvestor is a platform agnostic script.
 ### *nix Box Specific
 #### Usage
 In terminal, execute:
+
 ```
 php reinvest.php Username API_Key API_Secret
 ```
@@ -32,6 +33,7 @@ php reinvest.php Username API_Key API_Secret
 1. Download the lastest version of [PHP for Windows](http://windows.php.net/downloads/releases/php-5.5.7-Win32-VC11-x64.zip)
 2. Create a batch script to run the Reinvestor.
 ... A working example:
+
 ```
 cd "php" 
 php.exe ..\reinvest.php Username API_Key API_Secret" 
