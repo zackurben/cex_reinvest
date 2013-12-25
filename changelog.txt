@@ -11,3 +11,7 @@
 - Fixed pending order bugs, and console display problems.
 - Fixed cancel order bugs, and display problems.
 - Update status messages, fixed formatting and made them more clear.
+
+1.0.3
+- Fixed pending sales bug, would only check pending balance if your balance was greater than the reserve.
+- Fixed error in calculating purchase amount with a reserve limit.

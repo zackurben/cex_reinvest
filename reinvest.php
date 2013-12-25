@@ -1,7 +1,7 @@
 <?php
 	/**
 	 * Reinvestor	:	reinvest.php
-	 * Version		:	1.0.2
+	 * Version		:	1.0.3
 	 * Author		:	Zack Urben
 	 * Contact		:	zackurben@gmail.com
 	 * Creation		:	12/23/13 (public)
@@ -198,7 +198,7 @@
 			$price = execute($user, $data, "ticker", $data["coins"][$coin]["ticker"]); // get pair info
 	
 			// calculate purchase amount
-			$amt = ($balance[strtoupper($coin)]["available"]/$price["last"]);
+			$amt = (($balance[strtoupper($coin)]["available"]-$data["coins"][$coin]["reserve"])/$price["last"]);
 			$amt = round($amt, 8);
 			
 			if($amt > $balance[strtoupper($coin)]["available"]) {
@@ -251,10 +251,12 @@
 			$balance = execute($user, $data, "balance");
 			
 			// determine which trades will occur
-			$trade_btc = ($data["coins"]["btc"]["active"]) && 
-				(isset($balance["BTC"]["available"]) && ($balance["BTC"]["available"] > $data["coins"]["btc"]["reserve"]));
-			$trade_nmc = ($data["coins"]["nmc"]["active"]) && 
-				(isset($balance["NMC"]["available"]) && ($balance["NMC"]["available"] > $data["coins"]["nmc"]["reserve"]));
+			$trade_btc = (($data["coins"]["btc"]["active"]) && 
+				(isset($balance["BTC"]["available"]) && ($balance["BTC"]["available"] > $data["coins"]["btc"]["reserve"]))) ||
+				(count($data["pending"]["btc"]) > 0);
+			$trade_nmc = (($data["coins"]["nmc"]["active"]) && 
+				(isset($balance["NMC"]["available"]) && ($balance["NMC"]["available"] > $data["coins"]["nmc"]["reserve"]))) ||
+				(count($data["pending"]["nmc"]) > 0);
 			
 			if($trade_btc || $trade_nmc) {
 				if($trade_btc) {
