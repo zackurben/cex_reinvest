@@ -26,3 +26,6 @@
 1.0.6
 - Added README.md
 - Updated some output
+
+1.0.7
+- Fixed logic error with selling pending orders, should work correctly now.

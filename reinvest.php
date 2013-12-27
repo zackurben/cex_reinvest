@@ -4,7 +4,7 @@
 	 * you can read more in LICENSE.txt.
 	 *
 	 * Reinvestor	:	reinvest.php
-	 * Version		:	1.0.6
+	 * Version		:	1.0.7
 	 * Author		:	Zack Urben
 	 * Contact		:	zackurben@gmail.com
 	 * Creation		:	12/23/13 (public)
@@ -176,7 +176,7 @@
 			foreach($data["pending"][$coin] as $key => $trade) {
 				// if order is present in open_orders
 				if(isset($temp_oo[strval($trade["id"])])) {
-					if($cur < ($trade["time"] + 60)) {
+					if($cur > ($trade["time"] + 60)) {
 						// order is older than 1 min, cancel order by id
 						$temp_co = execute($user, $data, "cancel_order", $trade["id"]);
 						
