@@ -4,7 +4,7 @@
 	 * you can read more in LICENSE.txt.
 	 *
 	 * Reinvestor	:	reinvest.php
-	 * Version		:	1.0.7
+	 * Version		:	1.0.8
 	 * Author		:	Zack Urben
 	 * Contact		:	zackurben@gmail.com
 	 * Creation		:	12/23/13 (public)
@@ -173,27 +173,31 @@
 			$cur = time();
 
 			$temp_oo = execute($user, $data, "open_orders", $data["coins"][$coin]["ticker"]);
-			foreach($data["pending"][$coin] as $key => $trade) {
+			foreach($data["pending"][$coin] as $key) {
 				// if order is present in open_orders
-				if(isset($temp_oo[strval($trade["id"])])) {
-					if($cur > ($trade["time"] + 60)) {
+				if(isset($temp_oo[$key["id"]])) {
+					if($cur > ($key["time"] + 60)) {
 						// order is older than 1 min, cancel order by id
-						$temp_co = execute($user, $data, "cancel_order", $trade["id"]);
+						$temp_co = execute($user, $data, "cancel_order", $key["id"]);
 						
 						// remove order by id
 						if($temp_co) {
-							out("Reinvestor: Canceled pending order (" . $data["pending"][$coin][$trade["id"]] . ").\n");
-							unset($data["pending"][$coin][$trade["id"]]);
+							out("Reinvestor: Canceled pending order (" . $data["pending"][$coin][$key["id"]] . ").\n");
+							unset($data["pending"][$coin][$key["id"]]);
 						} else {
 							// TODO: log error to file
+							file_put_contents("error_log.txt", ("[" . date("Y-m-d h:i:s A", time()) .
+								"] Reinvestor, could not cancel pending order:\ntemp_co:" . print_r($temp_co, true) .
+								"\ntemp_oo:" . print_r($temp_oo, true)), FILE_APPEND | LOCK_EX);
 							out("ERROR: could not cancel pending order\n" . print_r($temp_co, true) . "\n");
 						}
 					}
 				} else {
+					//out("temp_oo dbg: " . print_r($temp_oo, true) . "\n");
 					// item is no longer in the order (transaction was successful)				
-					out("Reinvestor: Purchase order complete (ID: " . $trade["id"] . ", " . $trade["amount"] . 
-						" GHS @ " . $trade["price"] . " " . $data["coins"][$coin]["ticker"] . ")\n");
-					unset($data["pending"][$coin][strval($trade["id"])]);
+					out("Reinvestor: Purchase order complete (ID: " . $key["id"] . ", " . $key["amount"] . 
+						" GHS @ " . $key["price"] . " " . $data["coins"][$coin]["ticker"] . ")\n");
+					unset($data["pending"][$coin][strval($key["id"])]);
 				}
 			}
 		}
@@ -207,10 +211,16 @@
 			$price = execute($user, $data, "ticker", $data["coins"][$coin]["ticker"]); // get pair info
 	
 			// calculate purchase amount
-			$amt = ((($balance[strtoupper($coin)]["available"]-$data["coins"][$coin]["reserve"])/$price["last"]));
-			$amt = (round($amt, 8));
+			// catch random divide by zero
+			if($price["last"] != 0) {
+				$amt = ((($balance[strtoupper($coin)]["available"]-$data["coins"][$coin]["reserve"])/$price["last"]));
+				$amt = (round($amt, 8));
+			} else {
+				// error
+				out("ERROR: Last price from ticker was zero, DBG: (" . $data["coins"][$coin]["ticker"] . ")" . print_r($price, true));
+			}
 			
-			if($amt < $balance[strtoupper($coin)]["available"]) {
+			if($amt > $balance[strtoupper($coin)]["available"]/$price["last"]) {
 				$amt -= 0.00000001; // rounding made amt exceed available funds
 			}
 			
@@ -240,7 +250,8 @@
 			} else {
 				// coin balance cannot purchase minimum GHS
 				// remove because of spam?
-				out("Reinvestor: " . strtoupper($coin) . " balance is too low to place the minimum order.\n");
+				// allow with verbose flag
+				//out("Reinvestor: " . strtoupper($coin) . " balance is too low to place the minimum order.\n");
 			}
 		} else {
 			// Generic waiting time to lower CPU time

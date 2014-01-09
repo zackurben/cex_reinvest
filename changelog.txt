@@ -29,3 +29,7 @@
 
 1.0.7
 - Fixed logic error with selling pending orders, should work correctly now.
+
+1.0.8
+- Fixed logic error with pending orders.
+- Update comments and output.
