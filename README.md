@@ -1,3 +1,6 @@
+### Warning
+Due to the nature of [Bug #3](https://github.com/zackurben/cex_reinvest/issues/3), it is strongly reccommended that you use the [Java Reinvestor](https://github.com/zackurben/cex.io-reinvestor) for your Cex.io reinvestment needs. This PHP version, is not being supported anymore, at the current time.
+
 # Cex.io PHP Reinvestor
 The PHP Reinvestor is an opensource project, licensed under MIT, focused on automatic reinvesting in to GHS from the [Cex.io](https://cex.io/r/0/kannibal3/0/) Bitcoin cloud mining platform.
 
